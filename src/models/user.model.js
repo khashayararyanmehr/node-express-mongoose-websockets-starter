@@ -1,13 +1,21 @@
+const { omit, pick } = require('lodash');
+
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
-const { omit, pick } = require('lodash');
+
 const { roles } = require('../config/roles');
 
 const userSchema = mongoose.Schema(
   {
     name: {
       type: String,
+      required: true,
+      trim: true,
+    },
+    username: {
+      type: String,
+      unique: true,
       required: true,
       trim: true,
     },
@@ -23,16 +31,43 @@ const userSchema = mongoose.Schema(
         }
       },
     },
+    verified: {
+      type: Boolean,
+      default: false,
+    },
+    phoneNumber: {
+      type: String,
+      required: true,
+      trim: true,
+      validate(value) {
+        if (!validator.isNumeric(value)) {
+          throw new Error('Invalid phoneNumber');
+        }
+      },
+    },
     password: {
       type: String,
       required: true,
       trim: true,
       minlength: 8,
-      validate(value) {
-        if (!value.match(/\d/) || !value.match(/[a-zA-Z]/)) {
-          throw new Error('Password must contain at least one letter and one number');
-        }
-      },
+    },
+    adminAccessPassword: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 8,
+    },
+    programAccessPassword: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 8,
+    },
+    allSettingsAccessPassword: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 8,
     },
     role: {
       type: String,
@@ -54,12 +89,15 @@ userSchema.methods.toJSON = function() {
 
 userSchema.methods.transform = function() {
   const user = this;
-  return pick(user.toJSON(), ['id', 'email', 'name', 'role']);
+  return pick(user.toJSON(), ['id', 'username', 'email', 'name', 'phoneNumber', 'role']);
 };
 
 userSchema.pre('save', async function(next) {
   const user = this;
   if (user.isModified('password')) {
+    user.adminAccessPassword = await bcrypt.hash(`admin${user.password}`, 8);
+    user.programAccessPassword = await bcrypt.hash(`program${user.password}`, 8);
+    user.allSettingsAccessPassword = await bcrypt.hash(`allsettings${user.password}`, 8);
     user.password = await bcrypt.hash(user.password, 8);
   }
   next();

@@ -2,10 +2,11 @@ const moment = require('moment');
 const bcrypt = require('bcryptjs');
 const httpStatus = require('http-status');
 const config = require('../config/config');
+const AppError = require('../utils/AppError');
+
 const tokenService = require('./token.service');
 const userService = require('./user.service');
-const Token = require('../models/token.model');
-const AppError = require('../utils/AppError');
+const { Token } = require('../models');
 
 const generateAuthTokens = async userId => {
   const accessTokenExpires = moment().add(config.jwt.accessExpirationMinutes, 'minutes');
@@ -34,13 +35,13 @@ const checkPassword = async (password, correctPassword) => {
   }
 };
 
-const loginUser = async (email, password) => {
+const loginUser = async (username, password) => {
   try {
-    const user = await userService.getUserByEmail(email);
+    const user = await userService.getUserByUsername(username);
     await checkPassword(password, user.password);
     return user;
   } catch (error) {
-    throw new AppError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Incorrect username or password');
   }
 };
 

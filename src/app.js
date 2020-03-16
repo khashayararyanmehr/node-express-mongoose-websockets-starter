@@ -1,4 +1,8 @@
 const express = require('express');
+
+const app = express();
+require('express-ws')(app);
+
 const helmet = require('helmet');
 const xss = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -13,17 +17,17 @@ const { authLimiter } = require('./middlewares/rateLimiter');
 const routes = require('./routes/v1');
 const { errorConverter, errorHandler } = require('./middlewares/error');
 const AppError = require('./utils/AppError');
-
-const app = express();
+const docServer = require('./docServer');
 
 if (config.env !== 'test') {
   app.use(morgan.successHandler);
   app.use(morgan.errorHandler);
 }
 
+// setup Websockets on app
 // set security HTTP headers
 app.use(helmet());
-
+docServer(app);
 // parse json request body
 app.use(express.json());
 
@@ -47,11 +51,11 @@ passport.use('jwt', jwtStrategy);
 
 // limit repeated failed requests to auth endpoints
 if (config.env === 'production') {
-  app.use('/v1/auth', authLimiter);
+  app.use('/auth', authLimiter);
 }
 
 // v1 api routes
-app.use('/v1', routes);
+app.use('/', routes);
 
 // send back a 404 error for any unknown api request
 app.use((req, res, next) => {

@@ -1,4 +1,5 @@
 const httpStatus = require('http-status');
+const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const { userService } = require('../services');
 
@@ -14,6 +15,9 @@ const getUsers = catchAsync(async (req, res) => {
 });
 
 const getUser = catchAsync(async (req, res) => {
+  if (req.query.owner && req.query.owner !== req.params.userId) {
+    throw new AppError(httpStatus.FORBIDDEN, 'Forbidden');
+  }
   const user = await userService.getUserById(req.params.userId);
   res.send(user.transform());
 });
