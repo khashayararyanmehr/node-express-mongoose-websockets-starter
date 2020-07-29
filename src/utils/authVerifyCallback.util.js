@@ -5,8 +5,6 @@ const AppError = require('./AppError');
 const { roleRights } = require('../config/roles');
 
 const verifyCallback = (req, resolve, reject, requiredRights) => async (err, user, info) => {
-  // TODO: remove next line to activate authorization
-  return resolve(); // temporarily
   // eslint-disable-next-line no-unreachable
   if (err || info || !user) {
     return reject(new AppError(httpStatus.UNAUTHORIZED, 'Please authenticate'));
